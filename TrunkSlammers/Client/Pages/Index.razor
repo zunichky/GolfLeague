@@ -1,0 +1,94 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@inject StateContainer stateContainer
+@inject HttpClient Http
+@using TrunkSlammers.Shared
+
+@if (stateContainer.League == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    @*
+        <h2>Welcome to @stateContainer.League.Name</h2>
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Player Name</th>
+                    <th>Id</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var player in stateContainer.League.Players)
+                {
+                    <tr>
+                        <td>@player.FirstName</td>
+                        <td>@player.Id</td>
+                    </tr>
+                }
+            </tbody>
+        </table>*@
+
+    @if (stateContainer.Event != null)
+    {
+        <h3>Selected League: @stateContainer.League.Name</h3>
+        <h3>Selected Event: @stateContainer.Event.Name</h3>
+        @foreach (var team in stateContainer.Event.Teams)
+        {
+            <h3>Team: @team.Name</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Player Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var play in team.Members)
+                    {
+                        <tr>
+                            <td>@play.Id</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    }
+}
+
+
+
+@code
+{
+
+    protected override async Task OnInitializedAsync()
+    {
+        stateContainer.OnLeagueChange += LeagueChanged;
+        stateContainer.OnEventChange += EventChanged;
+
+        updateUi();
+    }
+
+    public void Dispose()
+    {
+        stateContainer.OnLeagueChange -= LeagueChanged;
+        stateContainer.OnEventChange -= EventChanged;
+    }
+
+    public void LeagueChanged()
+    {
+        updateUi();
+    }
+
+    public void EventChanged()
+    {
+        updateUi();
+    }
+
+    public void updateUi()
+    {
+        StateHasChanged();
+    }
+
+}

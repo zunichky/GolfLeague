@@ -1,0 +1,145 @@
+﻿
+@page "/fetchdata"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using TrunkSlammers.Shared
+
+@inject HttpClient Http
+
+@if (leagues == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <AuthorizeView>
+        <h2> Leagues you are in</h2>
+    </AuthorizeView>
+
+    <RadzenGrid @ref="leaguesGrid" AllowFiltering="true" AllowPaging="true" PageSize="3" AllowSorting="true" EditMode="DataGridEditMode.Single"
+                Data="@leagues" TItem="League" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow">
+        <Columns>
+            <RadzenGridColumn Width="100px" TItem="League" Property="Id" Title="ID">
+                @*<EditTemplate Context="curEvent">
+                        <RadzenNumeric @bind-Value="curEvent.Id" Style="width:100%" />
+                    </EditTemplate>*@
+            </RadzenGridColumn>
+
+            <RadzenGridColumn TItem="League" Property="Name" Title="Name">
+                <EditTemplate Context="league">
+                    <RadzenTextBox @bind-Value="league.Name" Style="width:100%; display: block" Name="LeagueName" />
+                    <RadzenRequiredValidator Text="League name is required" Component="LeagueName" Popup="true" />
+                </EditTemplate>
+            </RadzenGridColumn>
+
+            <RadzenGridColumn TItem="League" Context="sampleBlazorModelsSampleOrder" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                <Template Context="league">
+                    <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(league))">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="league">
+                    <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => SaveRow(league))">
+                    </RadzenButton>
+                    <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(league))">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenGridColumn>
+        </Columns>
+    </RadzenGrid>
+    <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="Add" Click="@InsertRow" />
+
+}
+
+@code {
+    private IList<League> leagues;
+    RadzenGrid<League> leaguesGrid;
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+
+        try
+        {
+            leagues = await Http.GetFromJsonAsync<IList<League>>("api/League/GetAllLeagues");
+
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+
+    }
+
+    void EditRow(League selectedLeague)
+    {
+        leaguesGrid.EditRow(selectedLeague);
+    }
+
+    void OnUpdateRow(League selectedLeague)
+    {
+        //dbContext.Update(order);
+
+        // For demo purposes only
+        // order.Customer = dbContext.Customers.Find(order.CustomerID);
+        // order.Employee = dbContext.Employees.Find(order.EmployeeID);
+
+        // For production
+        //dbContext.SaveChanges();
+    }
+
+    void SaveRow(League selectedLeague)
+    {
+        //ordersGrid.UpdateRow(order);
+    }
+
+    void CancelEdit(League selectedLeague)
+    {
+        //ordersGrid.CancelEditRow(order);
+
+        //// For production
+        //var orderEntry = dbContext.Entry(order);
+        //if (orderEntry.State == EntityState.Modified)
+        //{
+        //    orderEntry.CurrentValues.SetValues(orderEntry.OriginalValues);
+        //    orderEntry.State = EntityState.Unchanged;
+        //}
+    }
+
+    void DeleteRow(League selectedLeague)
+    {
+        //if (orders.Contains(order))
+        //{
+        //    dbContext.Remove<Order>(order);
+
+        //    // For demo purposes only
+        //    orders.Remove(order);
+
+        //    // For production
+        //    //dbContext.SaveChanges();
+
+        //    ordersGrid.Reload();
+        //}
+        //else
+        //{
+        //    ordersGrid.CancelEditRow(order);
+        //}
+    }
+
+    void InsertRow()
+    {
+        //ordersGrid.InsertRow(new Order());
+    }
+
+    void OnCreateRow(League selectedLeague)
+    {
+        // dbContext.Add(order);
+
+        // For demo purposes only
+        //order.Customer = dbContext.Customers.Find(order.CustomerID);
+        // order.Employee = dbContext.Employees.Find(order.EmployeeID);
+
+        // For production
+        //dbContext.SaveChanges();
+    }
+
+}

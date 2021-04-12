@@ -1,0 +1,171 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using TrunkSlammers.Shared
+@using Newtonsoft.Json
+@using System.Text;  
+
+@inject StateContainer stateContainer
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject SignOutSessionStateManager SignOutManager
+
+<AuthorizeView>
+    <Authorized>
+        <label for="league">League:</label>
+        <select id="league" @bind="SelectedLeagueId">
+            @if (leagues != null)
+            {
+                @foreach (var league in leagues)
+                {
+                    <option value="@league.Id">@league.Name</option>
+                }
+            }
+        </select>
+
+        @if (events != null)
+        {
+            <label for="event">Event:</label>
+            <select id="event" @bind="SelectedEventId">
+                @foreach (var eve in events)
+                {
+                    <option value="@eve.Id">@eve.Name</option>
+                }
+            </select>
+        }
+
+        <a href="authentication/profile">Hello, @context.User.Identity.Name!</a>
+        <button class="nav-link btn btn-link" @onclick="BeginSignOut">Log out</button>
+    </Authorized>
+    <NotAuthorized>
+        <a href="authentication/register">Register</a>
+        <a href="authentication/login">Log in</a>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code{
+    private League[] leagues;
+    private Event[] events;
+
+    private int _selectedLeagueId;
+    public int SelectedLeagueId
+    {
+        get => _selectedLeagueId;
+        set
+        {
+            _selectedLeagueId = value;
+            stateContainer.SetLeague(getLeagueFromId(SelectedLeagueId));
+            foreach (var x in leagues)
+            {
+                if (x.Id == SelectedLeagueId)
+                {
+                    events = x.Events.ToArray();
+                    if (events.Length > 0)
+                    {
+                        SelectedEventId = events[0].Id;
+                    }
+                    break;
+                }
+            }
+        }
+    }
+
+    private int _selectedEventId;
+    public int SelectedEventId
+    {
+        get => _selectedEventId;
+        set
+        {
+            _selectedEventId = value;
+            Event ev = getEventFromId(SelectedEventId);
+            if (ev != null)
+            {
+                stateContainer.SetEvent(ev);
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            leagues = await Http.GetFromJsonAsync<League[]>("api/League/GetAllLeagues");
+            if (leagues.Length > 0)
+            {
+                SelectedLeagueId = leagues[0].Id;
+                if (events.Length > 0)
+                {
+                    SelectedEventId = events[0].Id;
+                }
+            }
+            else
+            {
+
+                //var y = new League();
+                //y.Name = "2021Slammer";
+
+                //Player tmpPlayer = new Player
+                //{
+                //    Handicap = 15,
+                //    UserId = "ec897fd7-5120-44ae-9076-41784d4dbe5e",
+                //    UserInformationId = 1
+                //};
+                //y.Players.Add(tmpPlayer);
+
+                //Event tmpEvent = new Event
+                //{
+                //    StartDate = new DateTime(2021, 12, 1),
+                //    Location = "Boyne",
+                //    Name = "Event 1"
+                //};
+
+                //Team tmpTeam = new Team();
+                //tmpTeam.Name = "TeamConner";
+                //tmpTeam.Members.Add(tmpPlayer);
+                //tmpEvent.Teams.Add(tmpTeam);
+
+                //y.Events.Add(tmpEvent);
+            }
+
+            //await Http.PostAsync("api/League/CreateLeague", new StringContent(JsonConvert.SerializeObject(y), Encoding.UTF8, "application/json"));
+
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            Console.WriteLine("Can't get Leagues." + exception.ToString());
+        }
+    }
+
+
+    private async Task BeginSignOut(MouseEventArgs args)
+    {
+        await SignOutManager.SetSignOutState();
+
+        Navigation.NavigateTo("authentication/logout");
+    }
+
+    private League getLeagueFromId(int id)
+    {
+        if (leagues != null)
+        {
+            foreach (var x in leagues)
+            {
+                if (x.Id == id)
+                    return x;
+            }
+        }
+        return null;
+    }
+
+    private Event getEventFromId(int id)
+    {
+        if (events != null)
+        {
+            foreach (var x in events)
+            {
+                if (x.Id == id)
+                    return x;
+            }
+        }
+        return null;
+    }
+}
