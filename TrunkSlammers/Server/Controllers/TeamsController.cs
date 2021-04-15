@@ -26,26 +26,5 @@ namespace TrunkSlammers.Server.Controllers
 
             //return (await employeeRepository.GetEmployees()).ToList();
         }
-
-        [HttpGet("{id:int}")]
-        public async Task<ActionResult<Team>> GetTeam(int id)
-        {
-            try
-            {
-                return Ok(new Team());
-                /*
-                var result = await employeeRepository.GetEmployee(id);
-
-                if (result == null) return NotFound();
-
-                return result;
-                */
-            }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
-            }
-        }
     }
 }

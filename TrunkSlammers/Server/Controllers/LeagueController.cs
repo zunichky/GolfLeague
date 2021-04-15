@@ -18,112 +18,88 @@ namespace TrunkSlammers.Server.Controllers
     public class LeagueController : ControllerBase
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly ApplicationDbContext _context;
+        private readonly IDataManager _data;
 
-        public LeagueController(UserManager<ApplicationUser> userManager, ApplicationDbContext context)
+        public LeagueController(UserManager<ApplicationUser> userManager,
+            IDataManager data)
         {
             _userManager = userManager;
-            _context = context;
+            _data = data;
         }
 
         [HttpGet]
-        public IEnumerable<Team> GetAllTeams()
+        public async Task<ActionResult<List<League>>> GetAllLeagues()
         {
-            List<Team> y = new List<Team>();
-            y.Add(new Team());
-            return y;
-
-            //return (await employeeRepository.GetEmployees()).ToList();
-        }
-
-        [HttpGet]
-        public IEnumerable<League> GetAllLeagues()
-        {
-            if (User != null) /* The user object is found to be null here. */
+            var user = await getApplicationUser();
+            if (user != null)
             {
-                var user = _userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
-
-                if (user.Result != null)
-                {
-                    List<League> leaguesUserIsIn = _context.Leagues.Where(
-                    h => h.Players.Any(f => f.UserId == user.Result.Id))
-                    .Include(z => z.Players).Include(i => i.Events).ToList();
-                    return leaguesUserIsIn;
-                }
+                var returnLeague = await _data.Leagues.GetLeagues(user.Id);
+                return Ok(returnLeague);
             }
-            return null;
+            return StatusCode(StatusCodes.Status403Forbidden);
         }
 
         [HttpGet("{id:int}")]
-        public League GetLeague(int id)
+        public async Task<ActionResult<League>> GetLeague(int id)
         {
-            if (User != null) /* The user object is found to be null here. */
+            var user = await getApplicationUser();
+            if (user is null || !_data.Leagues.IsPlayerInLeague(id, user.Id))
             {
-                var user = _userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
-                if (user.Result != null)
-                {
-                    foreach (var league in FakeData.leagues)
-                    {
-                        if (league.Id == id)
-                        {
-                            //var matches = league.Players.Where(p => p.Id == user.Result.Id);
-                            foreach (Player player in league.Players)
-                            {
-                                if (player.UserId == user.Result.Id)
-                                {
-                                    return league;
-                                }
-                            }
-                        }
-                    }
-                }
+                return StatusCode(StatusCodes.Status403Forbidden);
             }
-
-            return null;
+            return Ok(await _data.Leagues.GetLeague(id));
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateLeague(League newLeague)
+        public async Task<ActionResult<League>> CreateLeague(League newLeague)
         {
-            _context.Leagues.Add(newLeague);
-            await _context.SaveChangesAsync();
+            var user = await getApplicationUser();
+            if (user is null)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+            newLeague.Players.Add(new Player()
+            {
+                UserId = user.Id,
+                UserInformationId = user.UserInformationId
+            });
+
+            League createdLeague = await _data.Leagues.CreateLeague(newLeague);
+            return Ok(createdLeague);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult> DeleteLeague(League league)
+        {
+            var user = await getApplicationUser();
+            if (user is null || !_data.Leagues.IsPlayerInLeague(league.Id, user.Id))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden);
+            }
+            await _data.Leagues.DeleteLeague(league);
             return Ok();
         }
 
-        /*
-        [HttpGet("{id:string}")]
-        public async Task<ActionResult<UserInformation>> GetUser(string id)
+        [HttpPost]
+        public async Task<ActionResult> EditLeagueName(League leagueToEdit)
         {
-            UserInformation userInfo = new UserInformation();
-            var user = _userManager.FindByIdAsync(id);
-            if (user.Result != null)
-            {
-                userInfo.FirstName = user.Result.FirstName;
-                userInfo.LastName = user.Result.LastName;
-                userInfo.Hand = user.Result.Hand;
-            }
-            return Ok(userInfo);
+            var user = await getApplicationUser();
+            if (user is null || !_data.Leagues.IsPlayerInLeague(leagueToEdit.Id, user.Id))
+                return StatusCode(StatusCodes.Status401Unauthorized);
+
+            await _data.Leagues.EditLeagueName(leagueToEdit.Id, leagueToEdit.Name);
+
+            return Ok();
         }
-        */
-            [HttpGet("{id:int}")]
-        public async Task<ActionResult<Team>> GetTeam(int id)
+
+        private async Task<ApplicationUser> getApplicationUser()
         {
-            try
+            ApplicationUser returnUser = null;
+            if (User is not null)
             {
-                return Ok(new Team());
-                /*
-                var result = await employeeRepository.GetEmployee(id);
-
-                if (result == null) return NotFound();
-
-                return result;
-                */
+                returnUser = await _userManager.FindByIdAsync(User.FindFirstValue(ClaimTypes.NameIdentifier));
             }
-            catch (Exception)
-            {
-                return StatusCode(StatusCodes.Status500InternalServerError,
-                    "Error retrieving data from the database");
-            }
+            return returnUser;
         }
     }
 }

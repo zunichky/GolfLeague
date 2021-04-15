@@ -19,8 +19,11 @@ namespace TrunkSlammers.Server.Data
         {
         }
 
+        public DbSet<League> Leagues { get; set; }
         public DbSet<Event> Events { get; set; }
-        public DbSet<League> Leagues{ get; set; }
+        public DbSet<Draft> Drafts{ get; set; }
+        public DbSet<Team> Teams { get; set; }
         public DbSet<Player> Players { get; set; }
+        public DbSet<UserInformation> UserInformation{ get; set; }
     }
 }

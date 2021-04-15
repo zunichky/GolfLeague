@@ -12,6 +12,11 @@ namespace TrunkSlammers.Server.Models
     {
         public int UserInformationId { get; set; }
         [ForeignKey("UserInformationId")]
-        public virtual UserInformation UserInformation { get; set; } = new UserInformation();
+        public virtual UserInformation UserInformation { get; set; } = new UserInformation()
+        { 
+            FirstName = "Test",
+            LastName = "User",
+            Hand = "Left"
+        };
     }
 }

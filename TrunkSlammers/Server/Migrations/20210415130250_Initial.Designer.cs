@@ -10,7 +10,7 @@ using TrunkSlammers.Server.Data;
 namespace TrunkSlammers.Server.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20210401195931_Initial")]
+    [Migration("20210415130250_Initial")]
     partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -350,7 +350,7 @@ namespace TrunkSlammers.Server.Migrations
                     b.HasIndex("EventId")
                         .IsUnique();
 
-                    b.ToTable("Draft");
+                    b.ToTable("Drafts");
                 });
 
             modelBuilder.Entity("TrunkSlammers.Shared.Event", b =>
@@ -360,7 +360,7 @@ namespace TrunkSlammers.Server.Migrations
                         .HasColumnType("int")
                         .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
-                    b.Property<int?>("LeagueId")
+                    b.Property<int>("LeagueId")
                         .HasColumnType("int");
 
                     b.Property<string>("Location")
@@ -404,7 +404,7 @@ namespace TrunkSlammers.Server.Migrations
                     b.Property<int>("Handicap")
                         .HasColumnType("int");
 
-                    b.Property<int?>("LeagueId")
+                    b.Property<int>("LeagueId")
                         .HasColumnType("int");
 
                     b.Property<int?>("TeamId")
@@ -452,7 +452,7 @@ namespace TrunkSlammers.Server.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("Team");
+                    b.ToTable("Teams");
                 });
 
             modelBuilder.Entity("TrunkSlammers.Shared.UserInformation", b =>
@@ -551,14 +551,18 @@ namespace TrunkSlammers.Server.Migrations
                 {
                     b.HasOne("TrunkSlammers.Shared.League", null)
                         .WithMany("Events")
-                        .HasForeignKey("LeagueId");
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("TrunkSlammers.Shared.Player", b =>
                 {
                     b.HasOne("TrunkSlammers.Shared.League", null)
                         .WithMany("Players")
-                        .HasForeignKey("LeagueId");
+                        .HasForeignKey("LeagueId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("TrunkSlammers.Shared.Team", null)
                         .WithMany("Members")

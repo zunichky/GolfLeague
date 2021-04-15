@@ -118,7 +118,7 @@ namespace TrunkSlammers.Server.Migrations
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Location = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    LeagueId = table.Column<int>(type: "int", nullable: true)
+                    LeagueId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -128,7 +128,7 @@ namespace TrunkSlammers.Server.Migrations
                         column: x => x.LeagueId,
                         principalTable: "Leagues",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -164,7 +164,7 @@ namespace TrunkSlammers.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Draft",
+                name: "Drafts",
                 columns: table => new
                 {
                     DraftId = table.Column<int>(type: "int", nullable: false)
@@ -175,9 +175,9 @@ namespace TrunkSlammers.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Draft", x => x.DraftId);
+                    table.PrimaryKey("PK_Drafts", x => x.DraftId);
                     table.ForeignKey(
-                        name: "FK_Draft_Events_EventId",
+                        name: "FK_Drafts_Events_EventId",
                         column: x => x.EventId,
                         principalTable: "Events",
                         principalColumn: "Id",
@@ -270,7 +270,7 @@ namespace TrunkSlammers.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Team",
+                name: "Teams",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
@@ -282,15 +282,15 @@ namespace TrunkSlammers.Server.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Team", x => x.Id);
+                    table.PrimaryKey("PK_Teams", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Team_Draft_DraftId",
+                        name: "FK_Teams_Drafts_DraftId",
                         column: x => x.DraftId,
-                        principalTable: "Draft",
+                        principalTable: "Drafts",
                         principalColumn: "DraftId",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Team_Events_EventId",
+                        name: "FK_Teams_Events_EventId",
                         column: x => x.EventId,
                         principalTable: "Events",
                         principalColumn: "Id",
@@ -305,8 +305,8 @@ namespace TrunkSlammers.Server.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Handicap = table.Column<int>(type: "int", nullable: false),
+                    LeagueId = table.Column<int>(type: "int", nullable: false),
                     UserInformationId = table.Column<int>(type: "int", nullable: false),
-                    LeagueId = table.Column<int>(type: "int", nullable: true),
                     TeamId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -317,11 +317,11 @@ namespace TrunkSlammers.Server.Migrations
                         column: x => x.LeagueId,
                         principalTable: "Leagues",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Players_Team_TeamId",
+                        name: "FK_Players_Teams_TeamId",
                         column: x => x.TeamId,
-                        principalTable: "Team",
+                        principalTable: "Teams",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -388,8 +388,8 @@ namespace TrunkSlammers.Server.Migrations
                 column: "Expiration");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Draft_EventId",
-                table: "Draft",
+                name: "IX_Drafts_EventId",
+                table: "Drafts",
                 column: "EventId",
                 unique: true);
 
@@ -429,13 +429,13 @@ namespace TrunkSlammers.Server.Migrations
                 column: "UserInformationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Team_DraftId",
-                table: "Team",
+                name: "IX_Teams_DraftId",
+                table: "Teams",
                 column: "DraftId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Team_EventId",
-                table: "Team",
+                name: "IX_Teams_EventId",
+                table: "Teams",
                 column: "EventId");
         }
 
@@ -472,13 +472,13 @@ namespace TrunkSlammers.Server.Migrations
                 name: "AspNetUsers");
 
             migrationBuilder.DropTable(
-                name: "Team");
+                name: "Teams");
 
             migrationBuilder.DropTable(
                 name: "UserInformation");
 
             migrationBuilder.DropTable(
-                name: "Draft");
+                name: "Drafts");
 
             migrationBuilder.DropTable(
                 name: "Events");

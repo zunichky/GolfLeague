@@ -1,8 +1,11 @@
 ﻿
-@page "/fetchdata"
+@page "/data/leagues"
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.WebAssembly.Authentication
 @using TrunkSlammers.Shared
+@using Newtonsoft.Json
+@using System.Text;
+
 
 @inject HttpClient Http
 
@@ -16,13 +19,10 @@ else
         <h2> Leagues you are in</h2>
     </AuthorizeView>
 
-    <RadzenGrid @ref="leaguesGrid" AllowFiltering="true" AllowPaging="true" PageSize="3" AllowSorting="true" EditMode="DataGridEditMode.Single"
+    <RadzenGrid @ref="leaguesGrid" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true" EditMode="DataGridEditMode.Single"
                 Data="@leagues" TItem="League" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow">
         <Columns>
             <RadzenGridColumn Width="100px" TItem="League" Property="Id" Title="ID">
-                @*<EditTemplate Context="curEvent">
-                        <RadzenNumeric @bind-Value="curEvent.Id" Style="width:100%" />
-                    </EditTemplate>*@
             </RadzenGridColumn>
 
             <RadzenGridColumn TItem="League" Property="Name" Title="Name">
@@ -44,15 +44,26 @@ else
                     </RadzenButton>
                 </EditTemplate>
             </RadzenGridColumn>
+            <RadzenGridColumn TItem="League" Context="league" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="70px">
+                <Template Context="league">
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(league))">
+                    </RadzenButton>
+                </Template>
+                <EditTemplate Context="league">
+                    <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(league))">
+                    </RadzenButton>
+                </EditTemplate>
+            </RadzenGridColumn>
         </Columns>
     </RadzenGrid>
-    <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="Add" Click="@InsertRow" />
+    <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="Add League" Click="@InsertRow" />
 
 }
 
 @code {
     private IList<League> leagues;
     RadzenGrid<League> leaguesGrid;
+    string leagueNameBeforeEdit;
 
     protected override async Task OnInitializedAsync()
     {
@@ -61,85 +72,57 @@ else
         try
         {
             leagues = await Http.GetFromJsonAsync<IList<League>>("api/League/GetAllLeagues");
-
         }
         catch (AccessTokenNotAvailableException exception)
         {
             exception.Redirect();
         }
-
     }
 
     void EditRow(League selectedLeague)
     {
         leaguesGrid.EditRow(selectedLeague);
+        leagueNameBeforeEdit = selectedLeague.Name;
     }
 
-    void OnUpdateRow(League selectedLeague)
+    async Task OnUpdateRow(League selectedLeague)
     {
-        //dbContext.Update(order);
-
-        // For demo purposes only
-        // order.Customer = dbContext.Customers.Find(order.CustomerID);
-        // order.Employee = dbContext.Employees.Find(order.EmployeeID);
-
-        // For production
-        //dbContext.SaveChanges();
+        await Http.PostAsync("api/League/EditLeagueName", new StringContent(JsonConvert.SerializeObject(selectedLeague), Encoding.UTF8, "application/json"));
     }
 
     void SaveRow(League selectedLeague)
     {
-        //ordersGrid.UpdateRow(order);
+        leaguesGrid.UpdateRow(selectedLeague);
+        leagueNameBeforeEdit = "";
     }
 
     void CancelEdit(League selectedLeague)
     {
-        //ordersGrid.CancelEditRow(order);
-
-        //// For production
-        //var orderEntry = dbContext.Entry(order);
-        //if (orderEntry.State == EntityState.Modified)
-        //{
-        //    orderEntry.CurrentValues.SetValues(orderEntry.OriginalValues);
-        //    orderEntry.State = EntityState.Unchanged;
-        //}
+        leaguesGrid.CancelEditRow(selectedLeague);
+        selectedLeague.Name = leagueNameBeforeEdit;
+        leagueNameBeforeEdit = "";
     }
 
-    void DeleteRow(League selectedLeague)
+    async Task DeleteRow(League selectedLeague)
     {
-        //if (orders.Contains(order))
-        //{
-        //    dbContext.Remove<Order>(order);
-
-        //    // For demo purposes only
-        //    orders.Remove(order);
-
-        //    // For production
-        //    //dbContext.SaveChanges();
-
-        //    ordersGrid.Reload();
-        //}
-        //else
-        //{
-        //    ordersGrid.CancelEditRow(order);
-        //}
+        await Http.PostAsync("api/League/DeleteLeague", new StringContent(JsonConvert.SerializeObject(selectedLeague), Encoding.UTF8, "application/json"));
+        await RefreshTable();
     }
 
     void InsertRow()
     {
-        //ordersGrid.InsertRow(new Order());
+        leaguesGrid.InsertRow(new League());
     }
 
-    void OnCreateRow(League selectedLeague)
+    async Task OnCreateRow(League selectedLeague)
     {
-        // dbContext.Add(order);
-
-        // For demo purposes only
-        //order.Customer = dbContext.Customers.Find(order.CustomerID);
-        // order.Employee = dbContext.Employees.Find(order.EmployeeID);
-
-        // For production
-        //dbContext.SaveChanges();
+        await Http.PostAsync("api/League/CreateLeague", new StringContent(JsonConvert.SerializeObject(selectedLeague), Encoding.UTF8, "application/json"));
+        await RefreshTable();
     }
 
+    async Task RefreshTable()
+    {
+        leagues = await Http.GetFromJsonAsync<IList<League>>("api/League/GetAllLeagues");
+        await leaguesGrid.Reload();
+    }
 }

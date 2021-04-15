@@ -47,6 +47,8 @@ namespace TrunkSlammers.Server
             services.AddControllersWithViews();
             services.AddHttpContextAccessor();
             services.AddRazorPages();
+
+            services.AddScoped<IDataManager, DatabaseData>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

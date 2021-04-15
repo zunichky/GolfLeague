@@ -1,0 +1,159 @@
+﻿
+@page "/data/events"
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.WebAssembly.Authentication
+@using TrunkSlammers.Shared
+@using Newtonsoft.Json
+@using System.Text;
+
+
+@inject HttpClient Http
+
+@if (leagues == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h3>Leagues</h3>
+    <RadzenDropDown TValue="int" @bind-Value="leagueId" Placeholder="Select league" AllowFiltering="false" Data="@(leagues)" TextProperty="Name" ValueProperty="Id" Style="margin-bottom: 20px" Change="@(args => LeagueChange(args))" />
+    <br />
+    <br />
+    @if (leagueId != 0)
+    {
+        <h2>Events</h2>
+        <RadzenButton Icon="add_circle_outline" style="margin-bottom: 10px" Text="Create Event"  Click="@InsertRow" />
+
+        <RadzenGrid  @ref="eventsGrid"  PageSize="5" AllowFiltering="true" AllowPaging="true" AllowSorting="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Data="@events" TItem="Event" ColumnWidth="200px" RowSelect="@RowSelect" RowUpdate="@OnUpdateRow" RowCreate="@OnCreateRow">
+            <Columns>
+                <RadzenGridColumn TItem="Event" Property="Id" Title="Id" />
+                <RadzenGridColumn TItem="Event" Property="Name" Title="Name">
+                    <EditTemplate Context="curEvent">
+                        <RadzenTextBox @bind-Value="curEvent.Name" Style="width:100%; display: block" Name="EventName" />
+                        <RadzenRequiredValidator Text="Event name is required" Component="EventName" Popup="true" />
+                    </EditTemplate>
+                </RadzenGridColumn>
+
+                <RadzenGridColumn TItem="Event" Context="sampleBlazorModelsSampleOrder" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="100px">
+                    <Template Context="curEvent">
+                        <RadzenButton Icon="edit" Size="ButtonSize.Small" Click="@(args => EditRow(curEvent))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="curEvent">
+                        <RadzenButton Icon="save" Size="ButtonSize.Small" Click="@((args) => SaveRow(curEvent))">
+                        </RadzenButton>
+                        <RadzenButton Icon="cancel" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Secondary" Click="@((args) => CancelEdit(curEvent))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+                <RadzenGridColumn TItem="Event" Context="curEvent" Bubble="false" Filterable="false" Sortable="false" TextAlign="TextAlign.Center" Width="70px">
+                    <Template Context="curEvent">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(curEvent))">
+                        </RadzenButton>
+                    </Template>
+                    <EditTemplate Context="curEvent">
+                        <RadzenButton ButtonStyle="ButtonStyle.Danger" Icon="close" Size="ButtonSize.Small" Click="@(args => DeleteRow(curEvent))">
+                        </RadzenButton>
+                    </EditTemplate>
+                </RadzenGridColumn>
+            </Columns>
+        </RadzenGrid>
+    }
+    <br />
+
+    @if (selectedEvent is not null)
+    {
+        <h2>@selectedEvent.Name Teams</h2>
+        <RadzenGrid AllowFiltering="true" AllowPaging="true" AllowSorting="true" FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                    Data="@selectedEvent.Teams" TItem="Team" ColumnWidth="200px">
+            <Columns>
+                <RadzenGridColumn TItem="Team" Property="Name" Title="Name" />
+            </Columns>
+        </RadzenGrid>
+    }
+
+}
+
+@code {
+    private IList<League> leagues;
+    private IList<Event> events;
+    int leagueId;
+    Event selectedEvent;
+    RadzenGrid<Event> eventsGrid;
+
+    void InsertRow()
+    {
+        eventsGrid.InsertRow(new Event());
+    }
+
+    void EditRow(Event selectedEvent)
+    {
+        eventsGrid.EditRow(selectedEvent);
+        //leagueNameBeforeEdit = selectedLeague.Name;
+    }
+
+    void SaveRow(Event selectedEvent)
+    {
+        eventsGrid.UpdateRow(selectedEvent);
+    }
+    void CancelEdit(Event selectedEvent)
+    {
+        eventsGrid.CancelEditRow(selectedEvent);
+        //selectedLeague.Name = leagueNameBeforeEdit;
+        //leagueNameBeforeEdit = "";
+    }
+
+    async Task DeleteRow(Event selectedEvent)
+    {
+        await Http.PostAsync("api/Event/DeleteEvent", new StringContent(JsonConvert.SerializeObject(selectedEvent), Encoding.UTF8, "application/json"));
+        await RefreshTable();
+    }
+
+    async Task RowSelect(Event eventt)
+    {
+        selectedEvent = await Http.GetFromJsonAsync<Event>("api/Event/GetEvent/" + eventt.Id.ToString());
+    }
+
+    void LeagueChange(object value)
+    {
+        events = leagues.FirstOrDefault(x => x.Id == leagueId).Events.ToList();
+        selectedEvent = null;
+    }
+
+    async Task OnUpdateRow(Event selectedEvent)
+    {
+        await Http.PostAsync("api/Event/EditEventName", new StringContent(JsonConvert.SerializeObject(selectedEvent), Encoding.UTF8, "application/json"));
+    }
+
+    async Task OnCreateRow(Event selectedEvent)
+    {
+        await Http.PostAsync("api/Event/CreateEvent/" + leagueId, new StringContent(JsonConvert.SerializeObject(selectedEvent), Encoding.UTF8, "application/json"));
+        await RefreshTable();
+    }
+
+    async Task RefreshTable()
+    {
+        leagues = await Http.GetFromJsonAsync<IList<League>>("api/League/GetAllLeagues");
+        events = leagues.FirstOrDefault(x => x.Id == leagueId).Events.ToList();
+        selectedEvent = null;
+        await eventsGrid.Reload();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitialized();
+
+        try
+        {
+            leagues = await Http.GetFromJsonAsync<IList<League>>("api/League/GetAllLeagues");
+
+        }
+        catch (AccessTokenNotAvailableException exception)
+        {
+            exception.Redirect();
+        }
+
+    }
+
+}
